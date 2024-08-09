@@ -27,33 +27,37 @@ jobs:
         echo "PR_BODY content:"
         echo "$PR_BODY"
 
-        # Check if Team A is selected
+        # Define a reusable function for sending notifications
+        send_notification() {
+          TEAM_NAME=$1
+          SLACK_WEBHOOK=$2
+
+          echo "Debugging: Notifying $TEAM_NAME."
+          curl -X POST -H 'Content-type: application/json' --data "$(jq -n --arg url "$PR_URL" --arg team "$TEAM_NAME" '{"text": "A new PR has been created/updated that affects \($team): \($url)"}')" "$SLACK_WEBHOOK" || echo "Failed to notify $TEAM_NAME"
+
+          # Send breaking changes to the team if present
+          BREAKING_CHANGES=$(echo "$PR_BODY" | awk '/## Breaking Changes/{flag=1;next}/##/{flag=0}flag' | sed '/^\s*$/d')
+          if [ ! -z "$BREAKING_CHANGES" ]; then
+            echo "Sending breaking changes to $TEAM_NAME."
+            curl -X POST -H 'Content-type: application/json' --data "$(jq -n --arg bc "$BREAKING_CHANGES" '{"text": "Breaking Changes: \($bc)"}')" "$SLACK_WEBHOOK" || echo "Failed to notify $TEAM_NAME about breaking changes"
+          else
+            echo "No breaking changes found for $TEAM_NAME."
+          fi
+        }
+
+        # Check if Team A is selected and notify
         if [[ "$PR_BODY" == *"- [x] Team A"* ]]; then
-          echo "Debugging: Team A is selected."
-          curl -X POST -H 'Content-type: application/json' --data "$(jq -n --arg url "$PR_URL" '{"text": "A new PR has been created/updated that affects Team A: \($url)"}')" ${{ secrets.NOTIFY_TEAM_A }} || echo "Failed to notify Team A"
+          send_notification "Team A" "${{ secrets.NOTIFY_TEAM_A }}"
         else
           echo "Debugging: Team A is NOT selected."
         fi
 
-        # Check if Team B is selected
+        # Check if Team B is selected and notify
         if [[ "$PR_BODY" == *"- [x] Team B"* ]]; then
-          echo "Debugging: Team B is selected."
-          curl -X POST -H 'Content-type: application/json' --data "$(jq -n --arg url "$PR_URL" '{"text": "A new PR has been created/updated that affects Team B: \($url)"}')" ${{ secrets.NOTIFY_TEAM_B }} || echo "Failed to notify Team B"
+          send_notification "Team B" "${{ secrets.NOTIFY_TEAM_B }}"
         else
           echo "Debugging: Team B is NOT selected."
         fi
 
-        # Check if there are breaking changes
-        BREAKING_CHANGES=$(echo "$PR_BODY" | awk '/## Breaking Changes/{flag=1;next}/##/{flag=0}flag' | sed '/^\s*$/d')
-        echo "Debugging: Breaking Changes content:"
-        echo "$BREAKING_CHANGES"
-
-        if [ ! -z "$BREAKING_CHANGES" ]; then
-          echo "Including breaking changes in the notification."
-          curl -X POST -H 'Content-type: application/json' --data "$(jq -n --arg bc "$BREAKING_CHANGES" '{"text": "Breaking Changes: \($bc)"}')" ${{ secrets.NOTIFY_TEAM_A }} || echo "Failed to notify Team A about breaking changes"
-          curl -X POST -H 'Content-type: application/json' --data "$(jq -n --arg bc "$BREAKING_CHANGES" '{"text": "Breaking Changes: \($bc)"}')" ${{ secrets.NOTIFY_TEAM_B }} || echo "Failed to notify Team B about breaking changes"
-        else
-          echo "No breaking changes found."
-        fi
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
