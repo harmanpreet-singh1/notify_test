@@ -30,11 +30,11 @@ jobs:
       id: notify_teams
       run: |
         PR_BODY="${{ steps.read_pr_template.outputs.pr_body }}"
-
+        
         # Debugging: Show the PR_BODY content
         echo "Debugging: PR_BODY content:"
         echo "$PR_BODY"
-
+        
         # Check if Team A is selected
         if echo "$PR_BODY" | grep -q '\- \[x\] Team A'; then
           echo "Debugging: Team A is selected."
