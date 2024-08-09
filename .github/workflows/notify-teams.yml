@@ -27,7 +27,7 @@ jobs:
         echo "PR_BODY content:"
         echo "$PR_BODY"
 
-        # Define a reusable function for sending notifications
+        # This function sends a notification to the selected team
         send_notification() {
           TEAM_NAME=$1
           SLACK_WEBHOOK=$2
