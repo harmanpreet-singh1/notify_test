@@ -22,15 +22,15 @@ jobs:
         set -e  # Stop execution if any command fails
 
         PR_BODY=$(jq -r '.pull_request.body' $GITHUB_EVENT_PATH)
+        PR_URL=${{ github.event.pull_request.html_url }}
+
         echo "PR_BODY content:"
         echo "$PR_BODY"
 
         # Check if Team A is selected
         if [[ "$PR_BODY" == *"- [x] Team A"* ]]; then
           echo "Debugging: Team A is selected."
-          curl -X POST -H 'Content-type: application/json' --data '{
-            "text": "A new PR has been created/updated that affects Team A: '"${{ github.event.pull_request.html_url }}"'"
-          }' ${{ secrets.NOTIFY_TEAM_A }} || echo "Failed to notify Team A"
+          curl -X POST -H 'Content-type: application/json' --data "$(jq -n --arg url "$PR_URL" '{"text": "A new PR has been created/updated that affects Team A: \($url)"}')" ${{ secrets.NOTIFY_TEAM_A }} || echo "Failed to notify Team A"
         else
           echo "Debugging: Team A is NOT selected."
         fi
@@ -38,9 +38,7 @@ jobs:
         # Check if Team B is selected
         if [[ "$PR_BODY" == *"- [x] Team B"* ]]; then
           echo "Debugging: Team B is selected."
-          curl -X POST -H 'Content-type: application/json' --data '{
-            "text": "A new PR has been created/updated that affects Team B: '"${{ github.event.pull_request.html_url }}"'"
-          }' ${{ secrets.NOTIFY_TEAM_B }} || echo "Failed to notify Team B"
+          curl -X POST -H 'Content-type: application/json' --data "$(jq -n --arg url "$PR_URL" '{"text": "A new PR has been created/updated that affects Team B: \($url)"}')" ${{ secrets.NOTIFY_TEAM_B }} || echo "Failed to notify Team B"
         else
           echo "Debugging: Team B is NOT selected."
         fi
@@ -52,12 +50,8 @@ jobs:
 
         if [ ! -z "$BREAKING_CHANGES" ]; then
           echo "Including breaking changes in the notification."
-          curl -X POST -H 'Content-type: application/json' --data '{
-            "text": "Breaking Changes: '"$BREAKING_CHANGES"'"
-          }' ${{ secrets.NOTIFY_TEAM_A }} || echo "Failed to notify Team A about breaking changes"
-          curl -X POST -H 'Content-type: application/json' --data '{
-            "text": "Breaking Changes: '"$BREAKING_CHANGES"'"
-          }' ${{ secrets.NOTIFY_TEAM_B }} || echo "Failed to notify Team B about breaking changes"
+          curl -X POST -H 'Content-type: application/json' --data "$(jq -n --arg bc "$BREAKING_CHANGES" '{"text": "Breaking Changes: \($bc)"}')" ${{ secrets.NOTIFY_TEAM_A }} || echo "Failed to notify Team A about breaking changes"
+          curl -X POST -H 'Content-type: application/json' --data "$(jq -n --arg bc "$BREAKING_CHANGES" '{"text": "Breaking Changes: \($bc)"}')" ${{ secrets.NOTIFY_TEAM_B }} || echo "Failed to notify Team B about breaking changes"
         else
           echo "No breaking changes found."
         fi
