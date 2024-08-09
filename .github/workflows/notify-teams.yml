@@ -24,9 +24,28 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Notify Slack for Team A
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.NOTIFY_TEAM_A }}
+    - name: Notify Teams based on selection
+      id: notify_teams
       run: |
-        echo "Sending notification to Team A"
-        curl -X POST -H 'Content-type: application/json' --data '{"text":"A new PR has been created/updated that affects Team A: ${{ github.event.pull_request.html_url }}"}' $SLACK_WEBHOOK_URL
+        PR_BODY="${{ steps.read_pr_template.outputs.pr_body }}"
+
+        # Check if Team A is selected
+        if echo "$PR_BODY" | grep -q '\- \[x\] Team A'; then
+          echo "Sending notification to Team A"
+          curl -X POST -H 'Content-type: application/json' --data '{"text":"A new PR has been created/updated that affects Team A: ${{ github.event.pull_request.html_url }}"}' ${{ secrets.NOTIFY_TEAM_A }}
+        fi
+
+        # Check if Team B is selected
+        if echo "$PR_BODY" | grep -q '\- \[x\] Team B'; then
+          echo "Sending notification to Team B"
+          curl -X POST -H 'Content-type: application/json' --data '{"text":"A new PR has been created/updated that affects Team B: ${{ github.event.pull_request.html_url }}"}' ${{ secrets.NOTIFY_TEAM_B }}
+        fi
+
+        # Check if there are breaking changes
+        BREAKING_CHANGES=$(echo "$PR_BODY" | awk '/## Breaking Changes/{flag=1;next}/##/{flag=0}flag' | sed '/^\s*$/d')
+
+        if [ ! -z "$BREAKING_CHANGES" ]; then
+          echo "Including breaking changes in the notification."
+          curl -X POST -H 'Content-type: application/json' --data '{"text":"Breaking Changes: '$BREAKING_CHANGES'"}' ${{ secrets.NOTIFY_TEAM_A }}
+          curl -X POST -H 'Content-type: application/json' --data '{"text":"Breaking Changes: '$BREAKING_CHANGES'"}' ${{ secrets.NOTIFY_TEAM_B }}
+        fi
