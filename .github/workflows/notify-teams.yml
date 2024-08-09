@@ -30,13 +30,13 @@ jobs:
       id: notify_teams
       run: |
         PR_BODY="${{ steps.read_pr_template.outputs.pr_body }}"
-        
+
         # Debugging: Show the PR_BODY content
         echo "Debugging: PR_BODY content:"
         echo "$PR_BODY"
-        
+
         # Check if Team A is selected
-        if echo "$PR_BODY" | grep -q '\- \[x\] Team A'; then
+        if [[ "$PR_BODY" == *"- [x] Team A"* ]]; then
           echo "Debugging: Team A is selected."
           curl -X POST -H 'Content-type: application/json' --data '{"text":"A new PR has been created/updated that affects Team A: ${{ github.event.pull_request.html_url }}"}' ${{ secrets.NOTIFY_TEAM_A }}
         else
@@ -44,7 +44,7 @@ jobs:
         fi
 
         # Check if Team B is selected
-        if echo "$PR_BODY" | grep -q '\- \[x\] Team B'; then
+        if [[ "$PR_BODY" == *"- [x] Team B"* ]]; then
           echo "Debugging: Team B is selected."
           curl -X POST -H 'Content-type: application/json' --data '{"text":"A new PR has been created/updated that affects Team B: ${{ github.event.pull_request.html_url }}"}' ${{ secrets.NOTIFY_TEAM_B }}
         else
