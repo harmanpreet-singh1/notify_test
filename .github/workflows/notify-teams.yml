@@ -1,0 +1,32 @@
+name: Notify Teams on PR
+
+on:
+  pull_request:
+    types: [opened, edited]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '18'
+
+    - name: Read PR template
+      id: read_pr_template
+      run: |
+        PR_BODY=$(jq -r '.pull_request.body' $GITHUB_EVENT_PATH)
+        echo "::set-output name=pr_body::$PR_BODY"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Notify Slack for Team A
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.NOTIFY_TEAM_A }}
+      run: |
+        echo "Sending notification to Team A"
+        curl -X POST -H 'Content-type: application/json' --data '{"text":"A new PR has been created/updated that affects Team A: ${{ github.event.pull_request.html_url }}"}' $SLACK_WEBHOOK_URL
