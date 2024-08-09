@@ -16,25 +16,23 @@ jobs:
       with:
         node-version: '18'
 
-    - name: Read PR template
-      id: read_pr_template
-      run: |
-        PR_BODY=$(jq -r '.pull_request.body' $GITHUB_EVENT_PATH)
-        echo "PR_BODY content:"
-        echo "$PR_BODY"
-        echo "::set-output name=pr_body::$PR_BODY"
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    # - name: Read PR template
+    #   id: read_pr_template
+    #   run: |
+    #     PR_BODY=$(jq -r '.pull_request.body' $GITHUB_EVENT_PATH)
+    #     echo "PR_BODY content:"
+    #     echo "$PR_BODY"
+    #     echo "::set-output name=pr_body::$PR_BODY"
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Notify Teams based on selection
       id: notify_teams
       run: |
-        PR_BODY="${{ steps.read_pr_template.outputs.pr_body }}"
-
-        # Debugging: Show the PR_BODY content
-        echo "Debugging: PR_BODY content:"
+        PR_BODY=$(jq -r '.pull_request.body' $GITHUB_EVENT_PATH)
+        echo "PR_BODY content:"
         echo "$PR_BODY"
-
+        
         # Check if Team A is selected
         if [[ "$PR_BODY" == *"- [x] Team A"* ]]; then
           echo "Debugging: Team A is selected."
@@ -63,3 +61,5 @@ jobs:
         else
           echo "No breaking changes found."
         fi
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
