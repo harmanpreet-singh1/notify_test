@@ -20,6 +20,8 @@ jobs:
       id: read_pr_template
       run: |
         PR_BODY=$(jq -r '.pull_request.body' $GITHUB_EVENT_PATH)
+        echo "PR_BODY content:"
+        echo "$PR_BODY"
         echo "::set-output name=pr_body::$PR_BODY"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -28,25 +30,36 @@ jobs:
       id: notify_teams
       run: |
         PR_BODY="${{ steps.read_pr_template.outputs.pr_body }}"
-        echo "$PR_BODY" | grep -q '\- \[x\] Team A';
+        
+        # Debugging: Show the PR_BODY content
+        echo "Debugging: PR_BODY content:"
+        echo "$PR_BODY"
         
         # Check if Team A is selected
         if echo "$PR_BODY" | grep -q '\- \[x\] Team A'; then
-          echo "Sending notification to Team A"
+          echo "Debugging: Team A is selected."
           curl -X POST -H 'Content-type: application/json' --data '{"text":"A new PR has been created/updated that affects Team A: ${{ github.event.pull_request.html_url }}"}' ${{ secrets.NOTIFY_TEAM_A }}
+        else
+          echo "Debugging: Team A is NOT selected."
         fi
 
         # Check if Team B is selected
         if echo "$PR_BODY" | grep -q '\- \[x\] Team B'; then
-          echo "Sending notification to Team B"
+          echo "Debugging: Team B is selected."
           curl -X POST -H 'Content-type: application/json' --data '{"text":"A new PR has been created/updated that affects Team B: ${{ github.event.pull_request.html_url }}"}' ${{ secrets.NOTIFY_TEAM_B }}
+        else
+          echo "Debugging: Team B is NOT selected."
         fi
 
         # Check if there are breaking changes
         BREAKING_CHANGES=$(echo "$PR_BODY" | awk '/## Breaking Changes/{flag=1;next}/##/{flag=0}flag' | sed '/^\s*$/d')
+        echo "Debugging: Breaking Changes content:"
+        echo "$BREAKING_CHANGES"
 
         if [ ! -z "$BREAKING_CHANGES" ]; then
           echo "Including breaking changes in the notification."
           curl -X POST -H 'Content-type: application/json' --data '{"text":"Breaking Changes: '$BREAKING_CHANGES'"}' ${{ secrets.NOTIFY_TEAM_A }}
           curl -X POST -H 'Content-type: application/json' --data '{"text":"Breaking Changes: '$BREAKING_CHANGES'"}' ${{ secrets.NOTIFY_TEAM_B }}
+        else
+          echo "No breaking changes found."
         fi
