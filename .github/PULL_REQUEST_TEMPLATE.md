@@ -9,4 +9,4 @@ _A brief summary of the changes and their impact on other teams._
 _Detailed description of the changes._
 
 ## Breaking Changes
-__Are there any breaking changes? If yes, describe them in detail.__
+_Are there any breaking changes? If yes, describe them in detail._
