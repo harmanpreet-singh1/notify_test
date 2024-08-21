@@ -36,7 +36,7 @@ jobs:
           curl -X POST -H 'Content-type: application/json' --data "$(jq -n --arg url "$PR_URL" --arg team "$TEAM_NAME" '{"text": "A new PR has been created/updated that affects \($team): \($url)"}')" "$SLACK_WEBHOOK" || echo "Failed to notify $TEAM_NAME"
 
           # Send breaking changes to the team if present
-          BREAKING_CHANGES=$(echo "$PR_BODY" | awk '/## Breaking Changes/{flag=1;next}/##/{flag=0}flag' | sed '/^\s*$/d')
+          BREAKING_CHANGES=$(echo "$PR_BODY" | awk '/## Breaking Changes/{flag=1;next}/##/{flag=0}flag' | sed '/^\s*$/d' | grep -v -e '^[[:space:]]*Are there any breaking changes\?' -e '^[[:space:]]*If yes, describe them in detail\?')
           if [ ! -z "$BREAKING_CHANGES" ]; then
             echo "Sending breaking changes to $TEAM_NAME."
             curl -X POST -H 'Content-type: application/json' --data "$(jq -n --arg bc "$BREAKING_CHANGES" '{"text": "Breaking Changes: \($bc)"}')" "$SLACK_WEBHOOK" || echo "Failed to notify $TEAM_NAME about breaking changes"
