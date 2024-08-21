@@ -1,4 +1,4 @@
-# Notifying Teams on Pull Requests
+# Notifying Teams on Pull Requests 
 
 ## Overview
 
